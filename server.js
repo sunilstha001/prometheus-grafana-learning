@@ -4,40 +4,53 @@ const client = require("prom-client");
 const app = express();
 const PORT = 3000;
 
-// Create registry
+
+// Create a registry where metrics are stored
+
 const register = new client.Registry();
 
-// Collect default Node.js metrics (CPU, memory, event loop)
+/*
+Collect default Node.js metrics
+CPU
+Memory
+Event loop delay
+*/
 client.collectDefaultMetrics({
-    register
+  register
 });
 
-// Custom metric: HTTP request counter
-const httpRequestsTotal = new client.Counter({
-    name: "http_requests_total",
-    help: "Total number of HTTP requests",
-    labelNames: ["method", "route", "status"]
+
+//Custom metric: HTTP request counter
+
+const httpRequestCounter = new client.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status"]
 });
 
-register.registerMetric(httpRequestsTotal);
+register.registerMetric(httpRequestCounter);
 
-// Example API route
+// Example route
+
 app.get("/", (req, res) => {
-    httpRequestsTotal.inc({
-        method: req.method,
-        route: req.path,
-        status: 200
-    });
 
-    res.send("Hello Prometheus Monitoring 🚀");
+  httpRequestCounter.inc({
+    method: req.method,
+    route: req.path,
+    status: 200
+  });
+
+  res.send("Hello from Prometheus monitored app");
 });
 
-// Metrics endpoint (Prometheus will scrape this)
+
+// Metrics endpoint for Prometheus
+
 app.get("/metrics", async (req, res) => {
-    res.set("Content-Type", register.contentType);
-    res.end(await register.metrics());
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
